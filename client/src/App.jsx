@@ -3,12 +3,11 @@ import './App.css'
 import { Search } from './components/Search.jsx'
 import Spinner from './components/Spinner.jsx';
 import MovieCard from './components/MovieCard.jsx';
-import MovieDetails from './components/MovieDetails.jsx';
 import { useDebounce } from 'react-use';
-import { updateSearchCount } from './appwrite.js';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { UpdateSearchCount } from './UpdateSearchCount.jsx';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
+const backendUrl=import.meta.env.VITE_BACKEND_URL;
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -25,8 +24,29 @@ const App = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [movieList, setMovieList] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [trendingMovies, setTrendingMovies] = useState([]);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     useDebounce(()=> setDebouncedSearchTerm(searchTerm), 500, [searchTerm]);
+    const trendingmovies=async()=>{
+        try{
+            const response=await fetch(`${backendUrl}/api/trending-movies`,{
+                method:'GET',
+                headers:{
+                    accept:'application/json', // Only accept header
+                }
+            })
+            const data=await response.json();
+            if(data.success){
+                setTrendingMovies(data.data);
+            }
+            console.log(data);
+        }
+        catch(error){
+            console.error('Error fetching trending movies:', error);
+            setErrorMessage(error.message || 'An error occurred while fetching trending movies');
+    }
+
+    }
     const fetchMovies = async (query='') => {
         setLoading(true);
         try{
@@ -51,7 +71,7 @@ const App = () => {
             setMovieList(data.results || []);
 
             if(query && data.results.length > 0) {
-                await updateSearchCount(query, data.results[0]);
+                await UpdateSearchCount(query, data.results[0]);
             }
 
         }
@@ -67,17 +87,43 @@ const App = () => {
     useEffect(() => {  
         fetchMovies(debouncedSearchTerm); 
     },[debouncedSearchTerm]);
+    useEffect(() => {
+        trendingmovies();
+    },[]);
     return(
         <main>
             <div className="pattern"/>
             <div className="wrapper">
                 <header>
                     <img src="hero.png" className="" alt="Hero Image" />
-                    <h1>Fell free to watch your Favourite <span className="text-gradient" >movies</span></h1>
+                    <h1>All your <span className="text-gradient" >movies </span>in one place</h1>
                     <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm}/>
                 </header>
+                <section className="trending">
+                    <h2 className="text-left">Trending Movies</h2>
+                    {
+                        trendingMovies.length > 0 ? (
+
+                            <ul>
+                                {
+                                    trendingMovies.map((movie,index)=>(
+                                        <li key={movie._id}>
+                                            <p>{index+1}</p>
+                                            <img src={movie.image_url} alt={movie.searchTerm} />
+
+                                            </li>
+                                    )
+                                )
+                                    
+                                }
+                            </ul>
+                        ):(
+                            <p className="text-gray-500">No trending movies available</p>
+                        )
+                    }
+                </section>
                 <section className="all-movies">
-                    <h2>All Movies</h2>
+                    <h2 className="text-left">All Movies</h2>
                     {loading?(
                         <Spinner />
                     ):errorMessage?(

@@ -3,8 +3,8 @@ import { useEffect } from 'react'
 
 export const Search = ({searchTerm,setSearchTerm}) => {
   return (
-    <div className="search">
-      <div>
+    <div className="search ">
+      <div >
          <img src="search.svg" alt="search"/>
          <input
          type="text"
